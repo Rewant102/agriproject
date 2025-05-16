@@ -34,3 +34,7 @@ Thumbs.db
 
 # VS Code
 .vscode/
+models/*.hdf5
+venv/
+__pycache__/
+*.pyc
