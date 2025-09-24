@@ -1,0 +1,25 @@
+<!doctype html>
+<html>
+<head>
+    <title>AgriSense - Results</title>
+</head>
+<body>
+    <h1>Prediction Results</h1>
+
+    <h2>✅ Most Confident Prediction:</h2>
+    <p><b>{{ prediction.class }}</b> (Confidence: {{ prediction.confidence }}%)</p>
+
+    <h2>📊 All Model Predictions:</h2>
+    <ul>
+    {% for model, pred in all_preds.items() %}
+        <li><b>{{ model }}</b>: {{ pred.class }} ({{ pred.confidence }}%)</li>
+    {% endfor %}
+    </ul>
+
+    <h2>🖼 Uploaded Image:</h2>
+    <img src="{{ image_path }}" alt="Uploaded Image" width="300">
+
+    <br><br>
+    <a href="/">🔙 Upload Another</a>
+</body>
+</html>

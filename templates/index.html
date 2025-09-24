@@ -1,0 +1,18 @@
+<!doctype html>
+<html>
+<head>
+    <title>AgriSense - Plant Disease Detection</title>
+</head>
+<body>
+    <h1>🌱 AgriSense - Upload an Image</h1>
+
+    {% if error %}
+        <p style="color:red;">{{ error }}</p>
+    {% endif %}
+
+    <form method="POST" enctype="multipart/form-data">
+        <input type="file" name="image" accept="image/*" required>
+        <button type="submit">Predict</button>
+    </form>
+</body>
+</html>
