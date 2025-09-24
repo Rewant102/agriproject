@@ -1,0 +1,17 @@
+# Python / Flask
+venv/
+__pycache__/
+*.pyc
+*.pyo
+
+# Model files
+models/*.hdf5
+models/*.h5
+
+# OS / env files
+.DS_Store
+.env
+*.log
+
+# Optional static/build files you don't want to track
+static/
