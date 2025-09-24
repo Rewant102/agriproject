@@ -13,5 +13,5 @@ models/*.h5
 .env
 *.log
 
-# Optional static/build files you don't want to track
+# Optional static/build files
 static/
