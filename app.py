@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, render_template
+import os
 import json, traceback
 import numpy as np
 from PIL import Image
@@ -14,8 +14,32 @@ import tensorflow as tf
 from tensorflow.keras.models import load_model
 from tensorflow.keras.preprocessing.image import img_to_array
 
+from flask import Flask, request, jsonify, render_template
+import requests
+
 # ------------------ Flask Setup ------------------
 app = Flask(__name__)
+
+# ------------------ Google Drive Model Links ------------------
+MODEL_URLS = {
+    "AgriNet_ResNet": "https://drive.google.com/uc?export=download&id=1THaqGbAUNuatkkF65Eynbewh1aUrD53Y",
+    "AgriNet_InceptionV3": "https://drive.google.com/uc?export=download&id=1WTGMOhF9vxfLJtTm96oxmrP9F9CROeXf",
+    "AgriNet_VGG19": "https://drive.google.com/uc?export=download&id=1nJD2FICQHzZf8P259atkNeHe712yWBoG",
+    "AgriNet_MobileNet": "https://drive.google.com/uc?export=download&id=1_9rs2_1vLrCuOSG7y2LLQ-XM75EAhFbz"
+}
+
+# ------------------ Ensure Models Exist ------------------
+def download_file(name, url):
+    os.makedirs("models", exist_ok=True)
+    path = f"models/{name}"
+    if not os.path.exists(path):
+        print(f"⬇️ Downloading {name} ...")
+        r = requests.get(url, stream=True)
+        with open(path, "wb") as f:
+            for chunk in r.iter_content(8192):
+                f.write(chunk)
+        print(f"✅ Downloaded: {name}")
+    return path
 
 # ------------------ Load Class Names ------------------
 with open('models/class_names.json') as f:
@@ -29,27 +53,27 @@ keras_models = {}
 pytorch_models = {}
 
 def load_models():
-    import os
-    for file in os.listdir('models'):
-        path = os.path.join('models', file)
+    for filename, url in MODEL_URLS.items():
+        ext = ".hdf5" if "h5" not in filename.lower() else ".h5"
+        path = download_file(filename + ext, url)
 
         # Load Keras models
-        if file.endswith(('.h5', '.hdf5')):
+        if path.endswith(('.h5', '.hdf5')):
             try:
-                keras_models[file] = load_model(path)
-                print(f"✅ Loaded Keras model: {file}")
+                keras_models[filename] = load_model(path)
+                print(f"✅ Loaded Keras model: {filename}")
             except Exception as e:
-                print(f"❌ Failed to load Keras model {file}: {e}")
+                print(f"❌ Failed to load {filename}: {e}")
 
         # Load PyTorch models
-        elif file.endswith('.pt'):
+        elif path.endswith('.pt'):
             try:
                 model = torch.load(path, map_location=torch.device('cpu'))
                 model.eval()
-                pytorch_models[file] = model
-                print(f"✅ Loaded PyTorch model: {file}")
+                pytorch_models[filename] = model
+                print(f"✅ Loaded PyTorch model: {filename}")
             except Exception as e:
-                print(f"❌ Failed to load PyTorch model {file}: {e}")
+                print(f"❌ Failed to load {filename}: {e}")
 
 load_models()
 
@@ -69,7 +93,7 @@ def preprocess_for_pytorch(img):
 
 # ------------------ Label Mapper ------------------
 def get_label(idx, model_name):
-    if model_name == 'plant_disease_model_latest.h5':
+    if "plant" in model_name.lower():
         names = plant_class_names
     else:
         names = agri_class_names
@@ -131,9 +155,7 @@ def index():
             if file.filename == "":
                 return render_template("index.html", error="Empty file name.")
 
-            # ✅ Open file directly in memory
             img = Image.open(BytesIO(file.read()))
-
             best_pred, all_preds = get_predictions(img)
 
             return render_template("result.html",
@@ -156,9 +178,7 @@ def predict_api():
         if file.filename == "":
             return jsonify({"error": "Empty file name."}), 400
 
-        # ✅ Open file directly in memory
         img = Image.open(BytesIO(file.read()))
-
         best_pred, all_preds = get_predictions(img)
 
         return jsonify({
@@ -172,4 +192,4 @@ def predict_api():
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))

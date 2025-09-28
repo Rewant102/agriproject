@@ -1,6 +1,8 @@
-flask
+Flask
 tensorflow
 torch
 torchvision
-pillow
+Pillow
 numpy
+requests
+gunicorn
