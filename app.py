@@ -1,8 +1,8 @@
 from flask import Flask, request, jsonify, render_template
-from werkzeug.utils import secure_filename
-import os, json, traceback
+import json, traceback
 import numpy as np
 from PIL import Image
+from io import BytesIO
 
 # PyTorch
 import torch
@@ -16,8 +16,6 @@ from tensorflow.keras.preprocessing.image import img_to_array
 
 # ------------------ Flask Setup ------------------
 app = Flask(__name__)
-app.config['UPLOAD_FOLDER'] = 'static/uploads'
-os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 # ------------------ Load Class Names ------------------
 with open('models/class_names.json') as f:
@@ -31,6 +29,7 @@ keras_models = {}
 pytorch_models = {}
 
 def load_models():
+    import os
     for file in os.listdir('models'):
         path = os.path.join('models', file)
 
@@ -55,17 +54,17 @@ def load_models():
 load_models()
 
 # ------------------ Preprocessing ------------------
-def preprocess_for_keras(image_path):
-    img = Image.open(image_path).convert("RGB").resize((224, 224))
+def preprocess_for_keras(img):
+    img = img.convert("RGB").resize((224, 224))
     arr = img_to_array(img) / 255.0
     return np.expand_dims(arr, axis=0)
 
-def preprocess_for_pytorch(image_path):
+def preprocess_for_pytorch(img):
     transform = transforms.Compose([
         transforms.Resize((224, 224)),
         transforms.ToTensor()
     ])
-    img = Image.open(image_path).convert("RGB")
+    img = img.convert("RGB")
     return transform(img).unsqueeze(0)
 
 # ------------------ Label Mapper ------------------
@@ -82,14 +81,14 @@ def get_label(idx, model_name):
     return f"unknown_class_{idx}"
 
 # ------------------ Prediction Handler ------------------
-def get_predictions(image_path):
+def get_predictions(img):
     predictions = {}
     best = {"class": "Unknown", "confidence": 0.0}
 
     # ---- Keras Models ----
     for name, model in keras_models.items():
         try:
-            x = preprocess_for_keras(image_path)
+            x = preprocess_for_keras(img)
             pred = model.predict(x)[0]
             idx = int(np.argmax(pred))
             confidence = float(np.max(pred))
@@ -104,7 +103,7 @@ def get_predictions(image_path):
     # ---- PyTorch Models ----
     for name, model in pytorch_models.items():
         try:
-            x = preprocess_for_pytorch(image_path)
+            x = preprocess_for_pytorch(img)
             with torch.no_grad():
                 pred = model(x)
                 probs = F.softmax(pred, dim=1)[0]
@@ -132,16 +131,14 @@ def index():
             if file.filename == "":
                 return render_template("index.html", error="Empty file name.")
 
-            filename = secure_filename(file.filename)
-            filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-            file.save(filepath)
+            # ✅ Open file directly in memory
+            img = Image.open(BytesIO(file.read()))
 
-            best_pred, all_preds = get_predictions(filepath)
+            best_pred, all_preds = get_predictions(img)
 
             return render_template("result.html",
                                    prediction=best_pred,
-                                   all_preds=all_preds,
-                                   image_path=filepath)
+                                   all_preds=all_preds)
         except Exception as e:
             traceback.print_exc()
             return render_template("index.html", error=str(e))
@@ -159,11 +156,10 @@ def predict_api():
         if file.filename == "":
             return jsonify({"error": "Empty file name."}), 400
 
-        filename = secure_filename(file.filename)
-        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-        file.save(filepath)
+        # ✅ Open file directly in memory
+        img = Image.open(BytesIO(file.read()))
 
-        best_pred, all_preds = get_predictions(filepath)
+        best_pred, all_preds = get_predictions(img)
 
         return jsonify({
             "most_confident_prediction": best_pred,

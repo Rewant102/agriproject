@@ -1,18 +1,49 @@
 <!doctype html>
-<html>
+<html lang="en">
 <head>
-    <title>AgriSense - Plant Disease Detection</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AgriSense - Plant Disease Detection</title>
+  <!-- Tailwind CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
-    <h1>🌱 AgriSense - Upload an Image</h1>
+<body class="bg-gradient-to-br from-green-50 via-green-100 to-green-200 min-h-screen flex items-center justify-center">
+
+  <!-- Card -->
+  <div class="bg-white shadow-xl rounded-2xl p-10 max-w-lg w-full">
+    <h1 class="text-4xl font-extrabold text-green-700 text-center mb-4">
+      🌱 AgriSense
+    </h1>
+    <p class="text-center text-gray-600 mb-8">
+      Upload a plant image and let AI detect diseases
+    </p>
 
     {% if error %}
-        <p style="color:red;">{{ error }}</p>
+      <p class="text-red-500 text-center font-medium mb-6">{{ error }}</p>
     {% endif %}
 
-    <form method="POST" enctype="multipart/form-data">
-        <input type="file" name="image" accept="image/*" required>
-        <button type="submit">Predict</button>
+    <!-- Upload Form -->
+    <form method="POST" enctype="multipart/form-data" class="space-y-6">
+      
+      <!-- File Upload Centered -->
+      <div class="flex justify-center">
+        <label class="px-6 py-3 bg-green-600 text-white font-medium rounded-lg shadow-md cursor-pointer hover:bg-green-700 hover:shadow-lg transition">
+          Choose File
+          <input type="file" name="image" accept="image/*" required class="hidden">
+        </label>
+      </div>
+
+      <!-- Predict Button -->
+      <div class="flex justify-center">
+        <button type="submit"
+                class="px-8 py-3 bg-green-600 text-white font-semibold rounded-lg shadow-md 
+                       hover:bg-green-700 hover:shadow-lg hover:-translate-y-0.5 
+                       active:translate-y-0 transition-all duration-200 ease-in-out">
+          🚀 Predict
+        </button>
+      </div>
     </form>
+  </div>
+
 </body>
 </html>
