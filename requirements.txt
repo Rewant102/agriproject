@@ -1,8 +1,12 @@
 Flask
-tensorflow
-torch
-torchvision
-Pillow
-numpy
-requests
 gunicorn
+requests
+numpy
+Pillow
+h5py
+tensorflow==2.11.0
+torch==2.0.1+cpu
+torchvision==0.15.2+cpu
+huggingface-hub
+transformers
+-f https://download.pytorch.org/whl/torch_stable.html
